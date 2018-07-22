@@ -1,0 +1,25 @@
+---
+
+####################
+# Install Tiller Service Account
+####################
+
+- name: Add Tiller Service Account Configuration
+  template:
+    src: tiller-service-account.yaml.j2
+    dest: /tmp/tiller-service-account.yaml
+    mode: 0644
+  become: false
+
+- name: Launch Kubernetes Tiller service account
+  command: "kubectl apply -f /tmp/tiller-service-account.yaml"
+
+- name: Init helm
+  command: "helm init --service-account tiller"
+
+- name: Verify that helm is running
+  shell: 'kubectl get --namespace kube-system pods -l "name=tiller"'
+  register: cmd_result
+  until: "cmd_result.stdout.find('1/1') != -1 and cmd_result.stdout.find('Running') != -1"
+  retries: 10
+  delay: 10

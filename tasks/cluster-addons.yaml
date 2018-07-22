@@ -1,0 +1,6 @@
+- include_tasks: install-addon.yaml
+  vars:
+    addon: '{{ item.value }}'
+    name: '{{ item.key }}'
+  when: 'item.value.enabled'
+  with_dict: '{{ clusterSpec.clusterAddons }}'

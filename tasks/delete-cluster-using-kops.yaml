@@ -1,0 +1,3 @@
+---
+- name: Delete cluster {{ cluster_name }}
+  shell: "kops delete cluster {{ cluster_name }} --state {{ state_store }} --yes"

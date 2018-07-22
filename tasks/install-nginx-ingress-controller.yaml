@@ -1,0 +1,57 @@
+- name: set config for ingress controller '{{ ingressClass }}'
+  set_fact:
+    ingress: "{{ clusterSpec.nginxIngressTemplate | combine( ingressConfig, recursive=True ) }}"
+
+- name: set config for ingress controller '{{ class }}'
+  set_fact:
+    ingress: >
+      {{ ingress | combine(
+        {
+          'values': {
+            'controller': {
+              'ingressClass': ingressClass
+            }
+          }
+        }, recursive=True)
+      }}
+
+- name: create certificate annotations for ingress service '{{ ingressClass }}'
+  set_fact:
+    ingress: >
+      {{ ingress | combine(
+        {
+          'values': {
+            'controller': {
+              'service': {
+                'annotations': {
+                  'service.beta.kubernetes.io/aws-load-balancer-ssl-cert': ingress.certificateArn
+                }
+              }
+            }
+          }
+        }, recursive=True)
+      }}
+
+- name: create internal annotations for ingress service '{{ ingressClass }}'
+  set_fact:
+    ingress: >
+      {{ ingress | combine(
+        {
+          'values': {
+            'controller': {
+              'service': {
+                'annotations': {
+                  'service.beta.kubernetes.io/aws-load-balancer-internal': '0.0.0.0/0'
+                }
+              }
+            }
+          }
+        }, recursive=True)
+      }}
+  when: "ingress.internal | default(false)"
+
+- name: install ingress '{{ ingressClass }}'
+  import_tasks: install-addon.yaml
+  vars:
+    addon: '{{ ingress }}'
+    name: '{{ ingressClass }}'

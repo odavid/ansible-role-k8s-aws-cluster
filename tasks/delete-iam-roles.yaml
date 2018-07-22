@@ -1,0 +1,6 @@
+- name: create iam roles for cluster {{ clusterSpec.cluster_name }}
+  iam_role:
+    name: '{{ item.key }}-{{ clusterSpec.cluster_name }}'
+    state: "absent"
+  with_dict: '{{ iam_roles }}'
+

@@ -1,0 +1,49 @@
+- name: get vpc_facts for {{ clusterSpec.cluster_name }}
+  ec2_vpc_net_facts:
+    region: "{{ clusterSpec.aws_region }}"
+    filters:
+      "tag:Name": "{{ clusterSpec.cluster_name }}"
+  register: vpc_facts
+
+- name: get vpc_id for {{ clusterSpec.cluster_name }}
+  set_fact:
+    vpc_id: '{{ vpc_facts.vpcs[0].vpc_id }}'
+
+- name: get vpn gateway facts for {{ clusterSpec.cluster_name }}
+  ec2_vpc_vgw_facts:
+    region: "{{ clusterSpec.aws_region }}"
+    filters:
+      "tag:Name": "{{ clusterSpec.cluster_name }}"
+  register: vpc_vgw_facts
+
+- name: get vpc_vgw for {{ clusterSpec.cluster_name }}
+  set_fact:
+    vpc_vgw: "{{ vpc_vgw_facts.virtual_gateways[0] }}"
+
+- name: get vpn connections facts for {{ clusterSpec.cluster_name }}
+  ec2_vpc_vpn_facts:
+    region: "{{ clusterSpec.aws_region }}"
+    filters:
+      vpn-gateway-id: "{{ vpc_vgw.vpn_gateway_id }}"
+  register: vpc_vpn_cons_facts
+
+- name: re-tag vpn gateway
+  ec2_tag:
+    region: "{{ clusterSpec.aws_region }}"
+    resource: "{{ vpc_vgw.vpn_gateway_id }}"
+    state: present
+    tags:
+      "transitvpc:spoke": "false"
+
+- name: wait until vpn connections are deleted
+  ec2_vpc_vpn_facts:
+    region: "{{ clusterSpec.aws_region }}"
+    filters:
+      vpn-gateway-id: "{{ vpc_vgw.vpn_gateway_id }}"
+      state: deleted
+  register: deleted_vpc_vpn_cons_facts
+  retries: 20
+  delay: 5
+  until: >
+    (deleted_vpc_vpn_cons_facts.vpn_connections | length) == (vpc_vpn_cons_facts.vpn_connections | length) or
+    (vpc_vpn_cons_facts.vpn_connections | length) == 0

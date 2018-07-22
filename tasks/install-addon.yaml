@@ -1,0 +1,53 @@
+- name: check if namespace exist
+  shell: "kubectl get namespace {{ addon.namespace }} -ojsonpath='{.metadata.name}'"
+  become: false
+  register: chart_namespace
+  failed_when: no
+  when: addon.namespace != 'kube-system'
+
+- name: create namespace
+  shell: "kubectl create namespace {{ addon.namespace }}"
+  become: false
+  when: addon.namespace != 'kube-system' and chart_namespace.stdout.find(addon.namespace) == -1
+
+- name: create values for {{ name }}
+  copy:
+    content: "{{ addon['values'] | default({}) | to_nice_yaml(indent=2) }}"
+    dest: '/tmp/helm-chart-{{ name }}-values.yaml'
+    mode: 0644
+  become: false
+
+- name: check if {{ name }} already installed
+  shell: helm get '{{ name }}'
+  failed_when: no
+  register: helm_stat
+
+- name: install {{ name }} using helm
+  shell: |
+    helm {% if addon.chart.startswith('quay.io/') %}registry{% endif %} install \
+      --namespace={{ addon.namespace | default('default') }} \
+      --name={{ name }} \
+      {{ addon.chart }} {% if addon.chart_version is defined %}--version {{ addon.chart_version }}{% endif %} \
+      -f /tmp/helm-chart-{{ name }}-values.yaml
+  when: helm_stat.stderr.find(' not found') != -1
+  become: false
+
+- name: update {{ name }} using helm
+  shell: |
+    helm upgrade \
+      --namespace={{ addon.namespace | default('default') }} \
+      {{ name }} \
+      {{ addon.chart }} {% if addon.chart_version is defined %}--version {{ addon.chart_version }}{% endif %} \
+      -f /tmp/helm-chart-{{ name }}-values.yaml
+  when: helm_stat.stderr.find(' not found') == -1 and not addon.chart.startswith('quay.io/')
+  become: false
+
+- name: update {{ name }} using helm registry
+  shell: |
+    helm registry upgrade \
+      {{ addon.chart }} -- \
+      --namespace={{ addon.namespace | default('default') }} \
+      {{ name }} \
+      -f /tmp/helm-chart-{{ name }}-values.yaml
+  when: helm_stat.stderr.find(' not found') == -1 and addon.chart.startswith('quay.io/')
+  become: false

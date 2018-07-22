@@ -1,0 +1,44 @@
+- name: get vpc_facts for {{ clusterSpec.cluster_name }}
+  ec2_vpc_net_facts:
+    region: "{{ clusterSpec.aws_region }}"
+    filters:
+      "tag:Name": "{{ clusterSpec.cluster_name }}"
+  register: vpc_facts
+
+- name: get account_number from stack-id
+  set_fact:
+    account_number: "{{ vpc_facts.vpcs[0].tags['aws:cloudformation:stack-id'].split(':')[4] }}"
+  when: (vpc_facts.vpcs | length) > 0
+
+- name: get vpc_id for {{ clusterSpec.cluster_name }}
+  set_fact:
+    vpc_id: '{{ vpc_facts.vpcs[0].vpc_id }}'
+  when: (vpc_facts.vpcs | length) > 0
+
+- name: get security_groups facts for {{ clusterSpec.cluster_name }}
+  ec2_group_facts:
+    region: "{{ clusterSpec.aws_region }}"
+    filters:
+      vpc-id: "{{ vpc_id }}"
+      "tag:Name": "{{ clusterSpec.cluster_name }}"
+  register: security_groups_facts
+  when: "vpc_id is defined and vpc_id"
+
+- name: get sg_default for {{ clusterSpec.cluster_name }}
+  set_fact:
+    sg_default: '{{ security_groups_facts.security_groups[0].group_id }}'
+  when: "vpc_id is defined and vpc_id"
+
+- name: get subnets for vpc {{ vpc_id }}
+  ec2_vpc_subnet_facts:
+    region: "{{ clusterSpec.aws_region }}"
+    filters:
+      vpc-id: "{{ vpc_id }}"
+  register: subnet_facts
+  when: "vpc_id is defined and vpc_id"
+
+- name: create vpc_subnets dict by cidr
+  set_fact:
+    vpc_subnets: "{{ vpc_subnets| default({}) | combine({ item.cidr_block: item }) }}"
+  with_items: "{{ subnet_facts.subnets }}"
+  when: "vpc_id is defined and vpc_id"

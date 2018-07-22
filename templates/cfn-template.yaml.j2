@@ -1,0 +1,264 @@
+Description: VPC for {{ clusterSpec.cluster_name }}
+Resources:
+  VPC:
+    Properties:
+      CidrBlock: '{{ clusterSpec.networkCIDR }}'
+      EnableDnsHostnames: 'true'
+      EnableDnsSupport: 'true'
+      Tags:
+      - Key: Name
+        Value: '{{ clusterSpec.cluster_name }}'
+      - Key: kubernetes.io/cluster/{{ clusterSpec.cluster_name }}
+        Value: shared
+    Type: AWS::EC2::VPC
+
+  DHCPOptions:
+    Type: "AWS::EC2::DHCPOptions"
+    Properties:
+      DomainName:
+        Fn::Sub: {{ 'ec2.internal' if clusterSpec.aws_region == 'us-east-1' else '${AWS::Region}.compute.internal' }}
+      DomainNameServers:
+        - AmazonProvidedDNS
+      Tags:
+      - Key: Name
+        Value: '{{ clusterSpec.cluster_name }}'
+      - Key: kubernetes.io/cluster/{{ clusterSpec.cluster_name }}
+        Value: shared
+
+  DHCPOptionsAssociation:
+    Type: "AWS::EC2::VPCDHCPOptionsAssociation"
+    Properties:
+      DhcpOptionsId:
+        Ref: DHCPOptions
+      VpcId:
+        Ref: VPC
+
+  InternetGateway:
+    Properties:
+      Tags:
+      - Key: Name
+        Value: '{{ clusterSpec.cluster_name }}'
+      - Key: kubernetes.io/cluster/{{ clusterSpec.cluster_name }}
+        Value: shared
+    Type: AWS::EC2::InternetGateway
+
+  GatewayToInternet:
+    Properties:
+      InternetGatewayId:
+        Ref: InternetGateway
+      VpcId:
+        Ref: VPC
+    Type: AWS::EC2::VPCGatewayAttachment
+
+  PublicRouteTable:
+    Properties:
+      Tags:
+      - Key: Name
+        Value: '{{ clusterSpec.cluster_name }}'
+      - Key: kubernetes.io/cluster/{{ clusterSpec.cluster_name }}
+        Value: shared
+      - Key: kubernetes.io/kops/role
+        Value: public
+      VpcId:
+        Ref: VPC
+    Type: AWS::EC2::RouteTable
+
+  PublicRoute:
+    DependsOn: GatewayToInternet
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: InternetGateway
+      RouteTableId:
+        Ref: PublicRouteTable
+    Type: AWS::EC2::Route
+
+  sgDefault:
+    Properties:
+      GroupName: '{{ clusterSpec.cluster_name }}'
+      GroupDescription: 'Default Security Group for cluster {{ clusterSpec.cluster_name }}'
+      SecurityGroupEgress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: '0'
+        IpProtocol: '-1'
+        ToPort: '65535'
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: '22'
+        IpProtocol: tcp
+        ToPort: '22'
+      Tags:
+      - Key: Name
+        Value: '{{ clusterSpec.cluster_name }}'
+      VpcId:
+        Ref: VPC
+    Type: AWS::EC2::SecurityGroup
+
+  sgDefaultIngressSelf:
+    Properties:
+      SourceSecurityGroupId:
+        Ref: sgDefault
+      FromPort: "0"
+      ToPort: "65535"
+      GroupId:
+        Ref: sgDefault
+      IpProtocol: "-1"
+    Type: AWS::EC2::SecurityGroupIngress
+
+{% for ingress_rule in clusterSpec.sgIngressRules %}
+  sgDefaultIngress{{ loop.index }}:
+    Properties:
+      CidrIp: '{{ ingress_rule.cidr }}'
+      FromPort: "{{ ingress_rule.from_port | default('0') }}"
+      ToPort: "{{ ingress_rule.to_port | default('65535') }}"
+      GroupId:
+        Ref: sgDefault
+      IpProtocol: "{{ ingress_rule.ip_protocol | default('-1') }}"
+    Type: AWS::EC2::SecurityGroupIngress
+{% endfor %}
+
+{% for subnet in (clusterSpec.subnets | selectattr('type', 'equalto', 'Private')) %}
+  Subnet{{ subnet.type }}{{ loop.index }}:
+    Properties:
+      AvailabilityZone: '{{ subnet.zone }}'
+      CidrBlock: '{{ subnet.cidr }}'
+      Tags:
+      - Key: Name
+        Value: '{{ subnet.name }}.{{ clusterSpec.cluster_name }}'
+      - Key: kubernetes.io/cluster/{{ clusterSpec.cluster_name }}
+        Value: shared
+      - Key: SubnetType
+        Value: '{{ subnet.type }}'
+      - Key: kubernetes.io/role/internal-elb
+        Value: '1'
+      VpcId:
+        Ref: VPC
+    Type: AWS::EC2::Subnet
+
+  PrivateRouteTable{{ loop.index }}:
+    Properties:
+      Tags:
+      - Key: Name
+        Value: 'private-{{ subnet.name }}.{{ clusterSpec.cluster_name }}'
+      - Key: kubernetes.io/cluster/{{ clusterSpec.cluster_name }}
+        Value: shared
+      - Key: SubnetType
+        Value: '{{ subnet.type }}'
+      - Key: kubernetes.io/kops/role
+        Value: 'private-{{ subnet.name }}'
+      VpcId:
+        Ref: VPC
+    Type: AWS::EC2::RouteTable
+
+  PrivateRoute{{ loop.index }}:
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: NATGateway{{ loop.index }}
+      RouteTableId:
+        Ref: PrivateRouteTable{{ loop.index }}
+    Type: AWS::EC2::Route
+
+  PrivateSubnetRouteTableAssociation{{ loop.index }}:
+    Properties:
+      RouteTableId:
+        Ref: PrivateRouteTable{{ loop.index }}
+      SubnetId:
+        Ref: Subnet{{ subnet.type }}{{ loop.index }}
+    Type: AWS::EC2::SubnetRouteTableAssociation
+
+{% endfor %}
+
+{% for subnet in (clusterSpec.subnets | selectattr('type', 'equalto', 'Utility')) %}
+  Subnet{{ subnet.type }}{{ loop.index }}:
+    Properties:
+      AvailabilityZone: '{{ subnet.zone }}'
+      CidrBlock: '{{ subnet.cidr }}'
+      Tags:
+      - Key: Name
+        Value: '{{ subnet.name }}.{{ clusterSpec.cluster_name }}'
+      - Key: kubernetes.io/cluster/{{ clusterSpec.cluster_name }}
+        Value: shared
+      - Key: SubnetType
+        Value: '{{ subnet.type }}'
+      - Key: kubernetes.io/role/elb
+        Value: '1'
+      VpcId:
+        Ref: VPC
+    Type: AWS::EC2::Subnet
+
+  NATGateway{{ loop.index }}:
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+        - NATIPAddress{{ loop.index }}
+        - AllocationId
+      SubnetId:
+        Ref: Subnet{{ subnet.type }}{{ loop.index }}
+      Tags:
+      - Key: Name
+        Value: {{ clusterSpec.cluster_name }}
+      - Key: kubernetes.io/cluster/{{ clusterSpec.cluster_name }}
+        Value: shared
+    Type: AWS::EC2::NatGateway
+
+  NATIPAddress{{ loop.index }}:
+    DependsOn: GatewayToInternet
+    Properties:
+      Domain: vpc
+    Type: AWS::EC2::EIP
+
+  PublicSubnetRouteTableAssociation{{ loop.index }}:
+    Properties:
+      RouteTableId:
+        Ref: PublicRouteTable
+      SubnetId:
+        Ref: Subnet{{ subnet.type }}{{ loop.index }}
+    Type: AWS::EC2::SubnetRouteTableAssociation
+
+{% endfor %}
+
+  EndpointS3:
+    Properties:
+      RouteTableIds:
+{% for subnet in (clusterSpec.subnets | selectattr('type', 'equalto', 'Private')) %}
+      - Ref: PrivateRouteTable{{ loop.index }}
+{% endfor %}
+      ServiceName:
+        Fn::Sub: com.amazonaws.${AWS::Region}.s3
+      VpcId:
+        Ref: VPC
+    Type: AWS::EC2::VPCEndpoint
+{% if clusterSpec.attach_transit_vpc %}
+  VPNGateway:
+    Properties:
+      Tags:
+      - Key: Name
+        Value: {{ clusterSpec.cluster_name }}
+      - Key: kubernetes.io/cluster/{{ clusterSpec.cluster_name }}
+        Value: shared
+      - Key: transitvpc:spoke
+        Value: 'true'
+      Type: ipsec.1
+      AmazonSideAsn: "{{ clusterSpec.awsSideAsn | default('65532') }}"
+    Type: AWS::EC2::VPNGateway
+
+  VPNGatewayAttachment:
+    Properties:
+      VpcId:
+        Ref: VPC
+      VpnGatewayId:
+        Ref: VPNGateway
+    Type: AWS::EC2::VPCGatewayAttachment
+
+  VPNGatewayRoutePropagation:
+    DependsOn: VPNGatewayAttachment
+    Properties:
+      RouteTableIds:
+{% for subnet in (clusterSpec.subnets | selectattr('type', 'equalto', 'Private')) %}
+      - Ref: PrivateRouteTable{{ loop.index }}
+{% endfor %}
+      VpnGatewayId:
+        Ref: VPNGateway
+    Type: AWS::EC2::VPNGatewayRoutePropagation
+{% endif %}

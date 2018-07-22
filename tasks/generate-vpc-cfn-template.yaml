@@ -1,0 +1,6 @@
+- name: generate vpc cfn template {{ vpc_cfn_template_file }} for {{ clusterSpec.cluster_name }}
+  template:
+    src: cfn-template.yaml.j2
+    dest: '{{ vpc_cfn_template_file }}'
+    mode: 0644
+  become: false

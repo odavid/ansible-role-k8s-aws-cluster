@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  author: Ohad David
+  description: Ansible role for setting up a k8s cluster and vpc using cloudformation and kops
+  license: MIT
+  min_ansible_version: 2.6
+  platforms:
+  - name: Amazon
+    versions:
+    - all
+  categories:
+  - cloud
+  - cloud:ec2
+  - development
+  - cloudformation
+  - kubernetes
+  - k8s
+dependencies: []

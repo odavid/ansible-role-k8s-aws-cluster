@@ -1,0 +1,188 @@
+{%- set master_zones = clusterSpec.master_zones | default(clusterSpec.aws_zones) -%}
+---
+apiVersion: kops/v1alpha2
+kind: Cluster
+metadata:
+  name: {{ clusterSpec.cluster_name }}
+spec:
+  cloudProvider: aws
+  configBase: '{{ state_store }}/{{ clusterSpec.cluster_name }}'
+  dnsZone: '{{ clusterSpec.dns_zone }}'
+  kubeControllerManager:
+{{ clusterSpec.kubeControllerManager | to_nice_yaml(indent=2) | indent(4, true) }}
+  kubelet:
+{{ clusterSpec.kubelet | to_nice_yaml(indent=2) | indent(4, true) }}
+  kubeAPIServer:
+{{ clusterSpec.kubeAPIServer | to_nice_yaml(indent=2) | indent(4, true) }}
+  api:
+{{ clusterSpec.api | to_nice_yaml(indent=2) | indent(4, true) }}
+  authorization:
+{{ clusterSpec.authorization | to_nice_yaml(indent=2) | indent(4, true) }}
+  channel: {{ clusterSpec.channel | default('stable') }}
+{% if clusterSpec.cloudLabels is defined and clusterSpec.cloudLabels %}
+  cloudLabels:
+{{ clusterSpec.cloudLabels | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+  etcdClusters:
+  - etcdMembers:
+{% for zone in master_zones.split(',') %}
+    - encryptedVolume: true
+      instanceGroup: master-{{zone}}
+      name: {{ zone[-1:] }}
+{% endfor %}
+    name: main
+  - etcdMembers:
+{% for zone in master_zones.split(',') %}
+    - encryptedVolume: true
+      instanceGroup: master-{{zone}}
+      name: {{ zone[-1:] }}
+{% endfor %}
+    name: events
+  iam:
+    allowContainerRegistry: true
+    legacy: false
+{% if clusterSpec.additionalPolicies %}
+  additionalPolicies:
+{{ clusterSpec.additionalPolicies | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+  kubernetesApiAccess:
+{{ clusterSpec.kubernetesApiAccess | to_nice_yaml(indent=2) | indent(2, true) }}
+  kubernetesVersion: {{ clusterSpec.kubernetesVersion }}
+  masterPublicName: api.{{ clusterSpec.dns_zone }}
+  networkCIDR: {{ clusterSpec.networkCIDR }}
+{% if vpc_id %}
+  networkID: {{ vpc_id }}
+{% endif %}
+{% if clusterSpec.networking %}
+  networking:
+{{ clusterSpec.networking | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+  nonMasqueradeCIDR: {{ clusterSpec.nonMasqueradeCIDR }}
+  sshAccess:
+{{ clusterSpec.sshAccess | to_nice_yaml(indent=2) | indent(2, true) }}
+  subnets:
+{% for subnet in clusterSpec.subnets %}
+  - cidr: {{ subnet.cidr }}
+    name: {{ subnet.name }}
+    type: {{ subnet.type }}
+    zone: {{ subnet.zone }}
+{% if vpc_subnets is defined and vpc_subnets[subnet.cidr] %}
+    id: {{ vpc_subnets[subnet.cidr].id }}
+{% endif %}
+{% endfor %}
+  topology:
+{% if clusterSpec.create_bastions %}
+    bastion:
+      bastionPublicName: bastion.{{ clusterSpec.dns_zone }}
+{% endif %}
+    dns:
+      type: Public
+    masters: private
+    nodes: private
+{% if clusterSpec.sshKeyName is defined and clusterSpec.sshKeyName %}
+  sshKeyName: {{ clusterSpec.sshKeyName }}
+{% endif %}
+
+{% if clusterSpec.create_bastions is defined and clusterSpec.create_bastions %}
+{%- set instanceGroup = clusterSpec.defaultInstanceGroupSpec | combine(clusterSpec.instanceGroups.bastions, recursive=True) -%}
+---
+apiVersion: kops/v1alpha2
+kind: InstanceGroup
+metadata:
+  labels:
+    kops.k8s.io/cluster: {{ clusterSpec.cluster_name }}
+  name: bastions
+spec:
+  image: {{ instanceGroup.image }}
+  machineType: {{ instanceGroup.machineType }}
+  maxSize: 1
+  minSize: 1
+  nodeLabels:
+    kops.k8s.io/instancegroup: bastions
+  role: Bastion
+  subnets:
+{% for zone in aws_zones.split(',') %}
+  - utility-{{ zone }}
+{% endfor %}
+{% if sg_default %}
+  additionalSecurityGroups:
+  - {{ sg_default }}
+{% endif %}
+
+{% endif %}
+
+{% for zone in master_zones.split(',') %}
+{%- set instanceGroup = clusterSpec.defaultInstanceGroupSpec | combine(clusterSpec.instanceGroups.masters, recursive=True) -%}
+---
+apiVersion: kops/v1alpha2
+kind: InstanceGroup
+metadata:
+  labels:
+    kops.k8s.io/cluster: {{ clusterSpec.cluster_name }}
+  name: master-{{ zone }}
+spec:
+  associatePublicIp: false
+  image: {{ instanceGroup.image }}
+  machineType: {{ instanceGroup.machineType }}
+  maxSize: 1
+  minSize: 1
+  nodeLabels:
+    kops.k8s.io/instancegroup: master-{{ zone }}
+  role: Master
+  rootVolumeSize: {{ instanceGroup.rootVolumeSize }}
+  subnets:
+  - {{ zone }}
+{% if sg_default %}
+  additionalSecurityGroups:
+  - {{ sg_default }}
+{% endif %}
+
+{% endfor %}
+
+{%- for name, spec in clusterSpec.instanceGroups.iteritems() -%}
+{% if name not in ['masters', 'bastions'] %}
+{%- set instanceGroup = clusterSpec.defaultInstanceGroupSpec | combine(spec, recursive=True) -%}
+{%- set cloudLabels = instanceGroup.cloudLabels | default({}) -%}
+{%- set nodeLabels = instanceGroup.nodeLabels | default({}) -%}
+{%- if instanceGroup.autoScalerEnabled-%}
+{%- set cloudLabels = {'k8s.io/cluster-autoscaler/enabled': 'true', 'kubernetes.io/cluster/'+clusterSpec.cluster_name : ''}|combine(cloudLabels, recursive=True) -%}
+{%- endif -%}
+---
+apiVersion: kops/v1alpha2
+kind: InstanceGroup
+metadata:
+  labels:
+    kops.k8s.io/cluster: {{ clusterSpec.cluster_name }}
+  name: {{ name }}
+spec:
+  associatePublicIp: false
+  image: {{ instanceGroup.image }}
+  machineType: {{ instanceGroup.machineType }}
+  maxSize: {{ instanceGroup.maxSize | default(instanceGroup.minSize) | default(0) }}
+  minSize: {{ instanceGroup.minSize | default(0) }}
+  nodeLabels:
+    kops.k8s.io/instancegroup: {{ name }}
+{% if instanceGroup.nodeLabels is defined and instanceGroup.nodeLabels %}
+{{ instanceGroup.nodeLabels | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+{% if cloudLabels %}
+  cloudLabels:
+{{ cloudLabels | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+{% if nodeLabels %}
+  nodeLabels:
+{{ nodeLabels | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+  role: Node
+  rootVolumeSize: {{ instanceGroup.rootVolumeSize }}
+  subnets:
+{% for zone in clusterSpec.aws_zones.split(',') %}
+  - {{ zone }}
+{% endfor %}
+{% if sg_default %}
+  additionalSecurityGroups:
+  - {{ sg_default }}
+{% endif %}
+{% endif %}
+
+{% endfor %}

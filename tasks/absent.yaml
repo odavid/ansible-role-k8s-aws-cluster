@@ -1,0 +1,18 @@
+- import_tasks: "delete-cluster-using-kops.yaml"
+  tags:
+    - vpc
+    - cluster
+
+- import_tasks: "delete-iam-roles.yaml"
+  tags:
+    - vpc
+    - cluster
+
+- import_tasks: "detach-transit-vpn-connections.yaml"
+  tags:
+    - vpc
+    - cluster
+
+- import_tasks: "delete-vpc-cfn-stack.yaml"
+  tags:
+    - vpc

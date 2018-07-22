@@ -1,0 +1,60 @@
+- import_tasks: "generate-vpc-cfn-template.yaml"
+  tags:
+    - vpc
+    - cluster
+    - generate-files
+
+- import_tasks: "create-vpc-cfn-stack.yaml"
+  tags:
+    - vpc
+    - cluster
+
+- import_tasks: "gather-vpc-facts.yaml"
+  tags:
+    - vpc
+    - cluster
+    - generate-files
+
+- import_tasks: "generate-cluster-spec.yaml"
+  tags:
+    - cluster
+    - generate-files
+
+- import_tasks: "create-cluster-using-kops.yaml"
+  tags:
+    - cluster
+
+- import_tasks: "create-iam-policies.yaml"
+  tags:
+    - cluster
+    - iam-policies
+    - iam-roles
+
+- import_tasks: "create-iam-roles.yaml"
+  tags:
+    - cluster
+    - iam-roles
+
+- import_tasks: "tiller.yaml"
+  tags:
+    - cluster
+    - tiller
+    - addons
+
+- import_tasks: "cluster-addons.yaml"
+  tags:
+    - cluster
+    - addons
+
+- import_tasks: "install-nginx-ingress-controllers.yaml"
+  tags:
+    - cluster
+    - addons
+    - ingress-controllers
+
+- import_tasks: "install-dashboard.yaml"
+  when: "clusterSpec.kubernetesDashboard.enabled"
+  tags:
+    - cluster
+    - addons
+    - dashboard

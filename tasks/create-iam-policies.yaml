@@ -1,0 +1,7 @@
+- name: create managed iam policies for k8s
+  iam_managed_policy:
+    policy_name: '{{ item.key }}'
+    policy_description: '{{ item.value.policy_description }}'
+    state: "present"
+    policy: "{{ item.value.policy | to_nice_json }}"
+  with_dict: '{{ iam_policies }}'

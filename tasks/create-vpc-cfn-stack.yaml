@@ -1,0 +1,10 @@
+- name: create vpc stack for {{ clusterSpec.cluster_name }}
+  cloudformation:
+    stack_name: "{{ clusterSpec.vpcStackPrefix }}{{ clusterSpec.cluster_name | replace('.', '-') }}"
+    state: "present"
+    region: "{{ clusterSpec.aws_region }}"
+    disable_rollback: false
+    template: "{{ vpc_cfn_template_file }}"
+    tags:
+      K8SCluster: '{{ clusterSpec.cluster_name }}'
+      Stack: "{{ clusterSpec.vpcStackPrefix }}{{ clusterSpec.cluster_name | replace('.', '-') }}"

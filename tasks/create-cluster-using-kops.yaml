@@ -1,0 +1,48 @@
+- name: store ssh public key in file {{ ssh_public_key_file }}
+  copy:
+    dest: '{{ ssh_public_key_file }}'
+    content: '{{ clusterSpec.sshPublicKey }}'
+    mode: 0644
+  become: false
+
+- name: check if {{ clusterSpec.cluster_name }} already exist
+  shell: kops get clusters --state {{ state_store }} {{ clusterSpec.cluster_name }}
+  register: kops_get_clusters
+  changed_when: no
+  failed_when: no
+
+- name: prepare log file {{ kops_log_file }}
+  shell: date > {{ kops_log_file }}
+
+- name: kops create --state {{ state_store }} -f {{ cluster_spec_file }}  2>&1| tee -a {{ kops_log_file }}
+  shell: "kops create --state {{ state_store }} -f {{ cluster_spec_file }} 2>&1| tee -a {{ kops_log_file }}"
+  when: "kops_get_clusters.stdout.find('not found') != -1"
+
+- name: kops create secret --name {{ clusterSpec.cluster_name }} sshpublickey admin -i {{ ssh_public_key_file }}
+  shell: kops create secret --name {{ clusterSpec.cluster_name }} sshpublickey admin -i {{ ssh_public_key_file }}
+
+- name: kops replace --state {{ state_store }} -f {{ cluster_spec_file }} --force  2>&1| tee -a {{ kops_log_file }}
+  shell: "kops replace --state {{ state_store }} -f {{ cluster_spec_file }} --force  2>&1| tee -a {{ kops_log_file }}"
+
+- name: kops update
+  shell: "kops update cluster --state {{ state_store }} --name {{ clusterSpec.cluster_name }} --yes  2>&1| tee -a {{ kops_log_file }}"
+
+- name: Verify that all Kubernetes nodes are ready
+  shell: "kops validate cluster --name {{ clusterSpec.cluster_name }} --state {{ state_store }}"
+  register: cmd_result
+  until: cmd_result.stdout.find('Your cluster ' + clusterSpec.cluster_name + ' is ready') != -1
+  retries: 20
+  delay: 60
+
+- name: kops rolling-update cluster --state {{ state_store }} --name {{ clusterSpec.cluster_name }} --yes 2>&1| tee -a {{ kops_log_file }}
+  shell: "kops rolling-update cluster --state {{ state_store }} --name {{ clusterSpec.cluster_name }} --yes 2>&1| tee -a {{ kops_log_file }}"
+
+- name: Verify that all Kubernetes nodes are ready
+  shell: "kops validate cluster --name {{ clusterSpec.cluster_name }} --state {{ state_store }} 2>&1| tee -a {{ kops_log_file }}"
+  register: cmd_result
+  until: cmd_result.stdout.find('Your cluster ' + clusterSpec.cluster_name + ' is ready') != -1
+  retries: 20
+  delay: 60
+
+- name: Configure kubectl using kops
+  shell: "kops export kubecfg --name {{ clusterSpec.cluster_name }} --state {{ state_store }}"

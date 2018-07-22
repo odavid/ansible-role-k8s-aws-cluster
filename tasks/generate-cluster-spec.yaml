@@ -1,0 +1,8 @@
+- debug: var=clusterSpec verbosity=2
+
+- name: create {{ cluster_spec_file }}
+  template:
+    src: cluster.yaml.j2
+    dest: '{{ cluster_spec_file }}'
+    mode: 0644
+  become: false

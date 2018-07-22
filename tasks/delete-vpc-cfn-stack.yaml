@@ -1,0 +1,5 @@
+- name: delete vpc stack for {{ clusterSpec.cluster_name }}
+  cloudformation:
+    stack_name: "{{ clusterSpec.vpcStackPrefix }}{{ clusterSpec.cluster_name | replace('.', '-') }}"
+    state: "absent"
+    region: "{{ clusterSpec.aws_region }}"

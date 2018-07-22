@@ -1,0 +1,7 @@
+- name: define defaults for cluster spec
+  set_fact:
+    clusterSpec: '{{ defaultClusterSpec | combine(clusterSpec, recursive=True) }}'
+  tags:
+    - always
+
+- import_tasks: "{{ state | default('present') }}.yaml"
