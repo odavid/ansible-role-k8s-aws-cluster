@@ -114,6 +114,7 @@ iam_policies:
       - Effect: Allow
         Action:
         - logs:CreateLogStream
+        - logs:CreateLogGroup
         - logs:PutLogEvents
         - logs:DescribeLogStreams
         Resource:
