@@ -50,6 +50,7 @@ The role creates the following IAM policies:
 * k8s-cluster-autoscaler - Required IAM Permissions for cluster-autoscaler addon
 * k8s-external-dns - Required IAM Permissions for external-dns addon
 * k8s-aws-alb-ingress-controller - Required IAM Permissions for aws-alb-ingress-controller (This addon is not active at the moment due to a [bug](https://github.com/kubernetes-sigs/aws-alb-ingress-controller/issues/457))
+* k8-cloudwatch-logs - Required IAM Permissions for sending logs to cloudwatch
 
 For each of the above IAM profiles a corresponding IAM Role will be created:
 * $POLICY_NAME-$CLUSTER_NAME - An IAM Role for the concrete cluster with the Policy attached to it and with sts:AssumeRole for the Nodes and Masters IAM Role - See [kube2iam](https://github.com/jtblin/kube2iam) for details
