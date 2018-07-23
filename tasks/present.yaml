@@ -14,6 +14,7 @@
     - vpc
     - cluster
     - generate-files
+    - iam-roles
 
 - import_tasks: "generate-cluster-spec.yaml"
   tags:
