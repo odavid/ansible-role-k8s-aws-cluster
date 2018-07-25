@@ -106,7 +106,7 @@ iam_policies:
         - waf:DisassociateWebACL
         Resource: "*"
 
-  k8-cloudwatch-logs:
+  k8s-cloudwatch-logs:
     policy_description: A managed policy for sending logs to cloudwatch
     policy:
       Version: '2012-10-17'
@@ -117,6 +117,7 @@ iam_policies:
         - logs:CreateLogGroup
         - logs:PutLogEvents
         - logs:DescribeLogStreams
+        - logs:DescribeLogGroups
         Resource:
         - arn:aws:logs:*:*:log-group:*
         - arn:aws:logs:*:*:log-group:*:log-stream:*
@@ -131,6 +132,6 @@ iam_roles:
   k8s-aws-alb-ingress-controller:
     policies:
     - k8s-aws-alb-ingress-controller
-  k8-cloudwatch-logs:
+  k8s-cloudwatch-logs:
     policies:
-    - k8-cloudwatch-logs
+    - k8s-cloudwatch-logs
