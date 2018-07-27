@@ -160,21 +160,17 @@ spec:
   machineType: {{ instanceGroup.machineType }}
   maxSize: {{ instanceGroup.maxSize | default(instanceGroup.minSize) | default(0) }}
   minSize: {{ instanceGroup.minSize | default(0) }}
+  role: Node
+  rootVolumeSize: {{ instanceGroup.rootVolumeSize }}
   nodeLabels:
     kops.k8s.io/instancegroup: {{ name }}
-{% if instanceGroup.nodeLabels is defined and instanceGroup.nodeLabels %}
-{{ instanceGroup.nodeLabels | to_nice_yaml(indent=2) | indent(4, true) }}
+{% if nodeLabels %}
+{{ nodeLabels | to_nice_yaml(indent=2) | indent(4, true) }}
 {% endif %}
 {% if cloudLabels %}
   cloudLabels:
 {{ cloudLabels | to_nice_yaml(indent=2) | indent(4, true) }}
 {% endif %}
-{% if nodeLabels %}
-  nodeLabels:
-{{ nodeLabels | to_nice_yaml(indent=2) | indent(4, true) }}
-{% endif %}
-  role: Node
-  rootVolumeSize: {{ instanceGroup.rootVolumeSize }}
   subnets:
 {% for zone in clusterSpec.aws_zones.split(',') %}
   - {{ zone }}
