@@ -31,6 +31,12 @@ spec:
       name: {{ zone[-1:] }}
 {% endfor %}
     name: main
+{% if clusterSpec.enableEtcdTLS %}
+    enableEtcdTLS: true
+{% endif %}
+{% if clusterSpec.etcdVersion %}
+    version: {{ etcdVersion }}
+{% endif %}
   - etcdMembers:
 {% for zone in master_zones.split(',') %}
     - encryptedVolume: true
@@ -38,6 +44,12 @@ spec:
       name: {{ zone[-1:] }}
 {% endfor %}
     name: events
+{% if clusterSpec.enableEtcdTLS %}
+    enableEtcdTLS: true
+{% endif %}
+{% if clusterSpec.etcdVersion %}
+    version: {{ etcdVersion }}
+{% endif %}
   iam:
     allowContainerRegistry: true
     legacy: false
