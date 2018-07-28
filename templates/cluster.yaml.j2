@@ -222,6 +222,10 @@ spec:
 {% if instanceGroup.maxPrice is defined and instanceGroup.maxPrice %}
   maxPrice: {{ instanceGroup.maxPrice }}
 {% endif %}
+{% if instanceGroup.taints is defined and instanceGroup.taints %}
+  taints:
+{{ instanceGroup.taints | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
   role: Node
   rootVolumeSize: {{ instanceGroup.rootVolumeSize }}
   nodeLabels:
@@ -234,7 +238,7 @@ spec:
 {{ cloudLabels | to_nice_yaml(indent=2) | indent(4, true) }}
 {% endif %}
   subnets:
-{% for zone in clusterSpec.aws_zones.split(',') %}
+{% for zone in (instanceGroup.aws_zones | default(clusterSpec.aws_zones)).split(',') %}
   - {{ zone }}
 {% endfor %}
 {% if sg_default %}
