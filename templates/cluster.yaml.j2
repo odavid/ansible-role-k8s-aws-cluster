@@ -8,16 +8,66 @@ spec:
   cloudProvider: aws
   configBase: '{{ state_store }}/{{ clusterSpec.cluster_name }}'
   dnsZone: '{{ clusterSpec.dns_zone }}'
+{% if clusterSpec.kubeControllerManager %}
   kubeControllerManager:
 {{ clusterSpec.kubeControllerManager | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+{% if clusterSpec.hooks %}
+  hooks:
+{{ clusterSpec.hooks | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+{% if clusterSpec.fileAssets %}
+  fileAssets:
+{{ clusterSpec.fileAssets | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+{% if clusterSpec.assets %}
+  assets:
+{{ clusterSpec.assets | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+{% if clusterSpec.cloudConfig %}
+  cloudConfig:
+{{ clusterSpec.cloudConfig | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+{% if clusterSpec.docker %}
+  docker:
+{{ clusterSpec.docker | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+{% if clusterSpec.kubelet %}
   kubelet:
 {{ clusterSpec.kubelet | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+{% if clusterSpec.kubeAPIServer %}
   kubeAPIServer:
 {{ clusterSpec.kubeAPIServer | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+{% if clusterSpec.kubernetesApiAccess %}
+  kubernetesApiAccess:
+{{ clusterSpec.kubernetesApiAccess | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+{% if clusterSpec.kubeScheduler %}
+  kubeScheduler:
+{{ clusterSpec.kubeScheduler | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+{% if clusterSpec.kubeDNS %}
+  kubeDNS:
+{{ clusterSpec.kubeDNS | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+{% if clusterSpec.api %}
   api:
 {{ clusterSpec.api | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+{% if clusterSpec.authorization %}
   authorization:
 {{ clusterSpec.authorization | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+{% if clusterSpec.authorization %}
+  authorization:
+{{ clusterSpec.authorization | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
+{% if clusterSpec.iam %}
+  iam:
+{{ clusterSpec.iam | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
   channel: {{ clusterSpec.channel | default('stable') }}
 {% if clusterSpec.cloudLabels is defined and clusterSpec.cloudLabels %}
   cloudLabels:
@@ -50,9 +100,6 @@ spec:
 {% if clusterSpec.etcdVersion %}
     version: {{ etcdVersion }}
 {% endif %}
-  iam:
-    allowContainerRegistry: true
-    legacy: false
 {% if clusterSpec.additionalPolicies %}
   additionalPolicies:
 {{ clusterSpec.additionalPolicies | to_nice_yaml(indent=2) | indent(4, true) }}
@@ -172,6 +219,9 @@ spec:
   machineType: {{ instanceGroup.machineType }}
   maxSize: {{ instanceGroup.maxSize | default(instanceGroup.minSize) | default(0) }}
   minSize: {{ instanceGroup.minSize | default(0) }}
+{% if instanceGroup.maxPrice is defined and instanceGroup.maxPrice %}
+  maxPrice: {{ instanceGroup.maxPrice }}
+{% endif %}
   role: Node
   rootVolumeSize: {{ instanceGroup.rootVolumeSize }}
   nodeLabels:
