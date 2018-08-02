@@ -94,6 +94,32 @@ Resources:
         Ref: VPC
     Type: AWS::EC2::SecurityGroup
 
+  sgAlbIngress:
+    Properties:
+      GroupName: '{{ clusterSpec.cluster_name }}-alb-ingress'
+      GroupDescription: 'Security Group for ALB Ingress of cluster {{ clusterSpec.cluster_name }}'
+      SecurityGroupEgress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: '0'
+        IpProtocol: '-1'
+        ToPort: '65535'
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: '443'
+        IpProtocol: tcp
+        ToPort: '443'
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: '80'
+        IpProtocol: tcp
+        ToPort: '80'
+      Tags:
+      - Key: Name
+        Value: 'alb-ingress'
+      VpcId:
+        Ref: VPC
+    Type: AWS::EC2::SecurityGroup
+
   sgDefaultIngressSelf:
     Properties:
       SourceSecurityGroupId:
@@ -102,6 +128,17 @@ Resources:
       ToPort: "65535"
       GroupId:
         Ref: sgDefault
+      IpProtocol: "-1"
+    Type: AWS::EC2::SecurityGroupIngress
+
+  sgDefaultIngressAlbIngress:
+    Properties:
+      SourceSecurityGroupId:
+        Ref: sgDefault
+      FromPort: "0"
+      ToPort: "65535"
+      GroupId:
+        Ref: sgAlbIngress
       IpProtocol: "-1"
     Type: AWS::EC2::SecurityGroupIngress
 
