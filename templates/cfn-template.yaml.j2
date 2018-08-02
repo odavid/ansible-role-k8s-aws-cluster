@@ -134,11 +134,11 @@ Resources:
   sgDefaultIngressAlbIngress:
     Properties:
       SourceSecurityGroupId:
-        Ref: sgDefault
+        Ref: sgAlbIngress
       FromPort: "0"
       ToPort: "65535"
       GroupId:
-        Ref: sgAlbIngress
+        Ref: sgDefault
       IpProtocol: "-1"
     Type: AWS::EC2::SecurityGroupIngress
 
