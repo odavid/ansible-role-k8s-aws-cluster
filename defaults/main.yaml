@@ -138,6 +138,18 @@ defaultClusterSpec:
         podAnnotations:
           iam.amazonaws.com/role: k8s-external-dns-{{ clusterSpec.cluster_name }}
 
+    alb-ingress:
+      enabled: true
+      chart: '{{ role_path }}/patched-addon-charts/alb-ingress-controller'
+      namespace: kube-system
+      values:
+        clusterName: clusterSpec.cluster_name
+        awsRegion: '{{ clusterSpec.aws_region }}'
+        podAnnotations:
+          iam.amazonaws.com/role: k8s-aws-alb-ingress-controller-{{ clusterSpec.cluster_name }}
+        livenessProbeInitialDelay: 300
+
+
   kubernetesDashboardTemplate:
     chart: '{{ role_path }}/patched-addon-charts/kubernetes-dashboard'
     namespace: kube-system
