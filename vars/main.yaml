@@ -40,6 +40,7 @@ iam_policies:
         Action:
         - acm:DescribeCertificate
         - acm:ListCertificates
+        - acm:GetCertificate
         Resource: "*"
       - Effect: Allow
         Action:
@@ -48,9 +49,11 @@ iam_policies:
         - ec2:CreateTags
         - ec2:DeleteSecurityGroup
         - ec2:DescribeInstances
+        - ec2:DescribeInstanceStatus
         - ec2:DescribeSecurityGroups
         - ec2:DescribeSubnets
         - ec2:DescribeTags
+        - ec2:DescribeVpcs
         - ec2:ModifyInstanceAttribute
         - ec2:RevokeSecurityGroupIngress
         Resource: "*"
@@ -70,6 +73,7 @@ iam_policies:
         - elasticloadbalancing:DescribeLoadBalancers
         - elasticloadbalancing:DescribeLoadBalancerAttributes
         - elasticloadbalancing:DescribeRules
+        - elasticloadbalancing:DescribeSSLPolicies
         - elasticloadbalancing:DescribeTags
         - elasticloadbalancing:DescribeTargetGroups
         - elasticloadbalancing:DescribeTargetGroupAttributes
