@@ -9,6 +9,7 @@ defaultClusterSpec:
   kubeScheduler: {}
   kubeDNS: {}
   enableEtcdTLS: false
+  etcdVersion:
   kubeAPIServer:
     runtimeConfig:
       batch/v2alpha1: "true"
