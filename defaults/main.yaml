@@ -6,6 +6,7 @@ kops_log_file: /tmp/{{ clusterSpec.cluster_name }}-kops-out.log
 defaultClusterSpec:
   create_bastions: false
   attach_transit_vpc: false
+  kubeScheduler: {}
   kubeAPIServer:
     runtimeConfig:
       batch/v2alpha1: "true"
