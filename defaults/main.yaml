@@ -37,8 +37,6 @@ defaultClusterSpec:
   iam:
     allowContainerRegistry: true
     legacy: false
-  kubernetesApiAccess:
-
   kubernetesVersion: 1.9.6
   nonMasqueradeCIDR: 100.64.0.0/10
   networking:
