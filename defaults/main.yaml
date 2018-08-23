@@ -180,6 +180,7 @@ defaultClusterSpec:
         create: true
       controller:
         kind: DaemonSet
+        minAvailable: 0
         config:
           server-snippet: |
             if ($http_x_forwarded_proto = 'http'){
