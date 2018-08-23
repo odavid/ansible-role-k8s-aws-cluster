@@ -15,7 +15,7 @@
   command: "kubectl apply -f /tmp/tiller-service-account.yaml"
 
 - name: Init helm
-  command: "helm init --service-account tiller"
+  command: "helm init --service-account tiller --upgrade"
 
 - name: Verify that helm is running
   shell: 'kubectl get --namespace kube-system pods -l "name=tiller"'
