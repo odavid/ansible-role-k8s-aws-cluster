@@ -37,7 +37,7 @@ defaultClusterSpec:
   iam:
     allowContainerRegistry: true
     legacy: false
-  kubernetesVersion: 1.9.6
+  kubernetesVersion: 1.10.7
   nonMasqueradeCIDR: 100.64.0.0/10
   networking:
     calico: {}
