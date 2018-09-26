@@ -289,7 +289,6 @@ Resources:
       {% for subnet in (clusterSpec.subnets | selectattr('type', 'equalto', 'Private')) %}
         - '{{ subnet.dnsForwarderIpAddress }}'
       {% endfor %}
-        - '{{ clusterSpec.vpcDefaultDNSIp }}'
       {% else %}
         - AmazonProvidedDNS
       {% endif %}
