@@ -1,3 +1,18 @@
+- name: find latest AMI for dns forwarders
+  ec2_ami_find:
+    region: "{{ clusterSpec.aws_region }}"
+    name: "{{ clusterSpec.dnsForwaderImageName }}"
+    owner: "{{ clusterSpec.dnsForwaderImageOwner }}"
+    sort: name
+    sort_order: descending
+    sort_end: 1
+  register: ami_find
+  when: clusterSpec.createDNSForwarders
+
+- set_fact:
+    dnsForwarderAmiId: '{{ ami_find.results[0].ami_id }}'
+  when: clusterSpec.createDNSForwarders
+
 - name: generate vpc cfn template {{ vpc_cfn_template_file }} for {{ clusterSpec.cluster_name }}
   template:
     src: cfn-template.yaml.j2

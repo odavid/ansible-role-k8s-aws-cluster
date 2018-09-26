@@ -153,8 +153,8 @@
         IamInstanceProfile:
           Arn:
             Fn::GetAtt: [dnsForwarderInstanceProfile, Arn]
-        ImageId: ami-d7b9a2b1 ## TODO: Find By Name
-        InstanceType: r4.large ## TODO: Change to variable
+        ImageId: '{{ dnsForwarderAmiId }}'
+        InstanceType: '{{ clusterSpec.dnsForwarderInstanceType }}'
         KeyName: '{{ clusterSpec.sshKeyName }}'
         TagSpecifications:
         - ResourceType: instance
