@@ -303,7 +303,7 @@ Resources:
     {% if clusterSpec.createDNSForwarders %}
     DependsOn:
     {% for subnet in (clusterSpec.subnets | selectattr('type', 'equalto', 'Private')) %}
-    - dnsForwarderInstance{{ loop.index }}
+    - dnsForwaderInstanceNetworkAttach{{ loop.index}}
     {% endfor %}
     {% endif %}
     Properties:
