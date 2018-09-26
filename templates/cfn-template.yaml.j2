@@ -285,7 +285,14 @@ Resources:
       DomainName:
         Fn::Sub: {{ 'ec2.internal' if clusterSpec.aws_region == 'us-east-1' else '${AWS::Region}.compute.internal' }}
       DomainNameServers:
+      {% if clusterSpec.createDNSForwarders %}
+      {% for subnet in (clusterSpec.subnets | selectattr('type', 'equalto', 'Private')) %}
+        - '{{ subnet.dnsForwarderIpAddress }}'
+      {% endfor %}
+        - '{{ clusterSpec.vpcDefaultDNSIp }}'
+      {% else %}
         - AmazonProvidedDNS
+      {% endif %}
       Tags:
       - Key: Name
         Value: '{{ clusterSpec.cluster_name }}'
@@ -294,6 +301,12 @@ Resources:
 
   DHCPOptionsAssociation:
     Type: "AWS::EC2::VPCDHCPOptionsAssociation"
+    {% if clusterSpec.createDNSForwarders %}
+    DependsOn:
+    {% for subnet in (clusterSpec.subnets | selectattr('type', 'equalto', 'Private')) %}
+    - dnsForwarderInstance{{ loop.index }}
+    {% endfor %}
+    {% endif %}
     Properties:
       DhcpOptionsId:
         Ref: DHCPOptions
