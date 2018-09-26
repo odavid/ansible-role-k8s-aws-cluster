@@ -95,6 +95,12 @@
                 - /etc/cfn/cfn-hup.conf
                 - /etc/cfn/hooks.d/cfn-auto-reloader.conf
         named:
+          commands:
+            create_namedlogsdir:
+              command:
+                Fn::Sub: |
+                  mkdir -p /var/log/named/
+                  chown -R named:named /var/log/named/
           packages:
             yum:
               bind: {}
@@ -131,7 +137,7 @@
                   };
                   logging {
                     channel default_debug {
-                      file "/var/log/named.log";
+                      file "/var/log/named/default.log";
                       severity dynamic;
                     };
                   };
