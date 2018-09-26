@@ -161,7 +161,9 @@
           Tags:
           - Key: Name
             Value: '{{clusterSpec.cluster_name}}-dnsForwarder'
-
+        SecurityGroupIds:
+        - Ref: sgDefault
+        - Ref: sgDnsForwarder
         UserData:
           Fn::Base64:
             Fn::Sub: |-
