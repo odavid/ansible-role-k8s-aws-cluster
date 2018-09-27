@@ -16,7 +16,7 @@
 
 - name: kops create --state {{ state_store }} -f {{ cluster_spec_file }}  2>&1| tee -a {{ kops_log_file }}
   shell: "kops create --state {{ state_store }} -f {{ cluster_spec_file }} 2>&1| tee -a {{ kops_log_file }}"
-  when: "kops_get_clusters.stdout.find('not found') != -1"
+  when: "kops_get_clusters.stderr.find('not found') != -1"
 
 - name: kops create secret --state {{ state_store }} --name {{ clusterSpec.cluster_name }} sshpublickey admin -i {{ ssh_public_key_file }}
   shell: kops create secret --state {{ state_store }} --name {{ clusterSpec.cluster_name }} sshpublickey admin -i {{ ssh_public_key_file }}
