@@ -1,0 +1,222 @@
+  sgDnsForwarder:
+    Properties:
+      GroupName: '{{ clusterSpec.cluster_name }}-dns-forwarder'
+      GroupDescription: 'Security Group for dns forwarder instances in cluster {{ clusterSpec.cluster_name }}'
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: 53
+        IpProtocol: '-1'
+        ToPort: 53
+      Tags:
+      - Key: Name
+        Value: dns-forwarder
+      VpcId:
+        Ref: VPC
+    Type: AWS::EC2::SecurityGroup
+
+  roleDnsForwarder:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+      Path: /
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - Action:
+            - logs:CreateLogStream
+            - logs:CreateLogGroup
+            - logs:DescribeLogStreams
+            - logs:PutLogEvents
+            Effect: Allow
+            Resource:
+            - arn:aws:logs:*:*:*
+        PolicyName: aws-logs
+      - PolicyDocument:
+          Statement:
+          - Action:
+            - ec2:Describe*
+            Effect: Allow
+            Resource:
+            - '*'
+        PolicyName: ec2-readonly
+    Type: AWS::IAM::Role
+
+  dnsForwarderInstanceProfile:
+    Properties:
+      Path: /
+      Roles:
+      - Ref: roleDnsForwarder
+    Type: AWS::IAM::InstanceProfile
+
+  dnsForwarderLaunchTemplate:
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          first-boot:
+          - named
+          - cfn-hup-setup
+          update:
+          - named
+          - cfn-hup-setup
+        cfn-hup-setup:
+          files:
+            /etc/cfn/cfn-hup.conf:
+              content:
+                Fn::Sub: |
+                  [main]
+                  stack=${AWS::StackName}
+                  region=${AWS::Region}
+                  interval=2
+              group: root
+              mode: '000400'
+              owner: root
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content:
+                Fn::Sub: |
+                  [cfn-auto-reloader-hook]
+                  triggers=post.update
+                  path=Resources.dnsForwarderLaunchTemplate.Metadata.AWS::CloudFormation::Init
+                  action=/opt/aws/bin/cfn-init -v -s ${AWS::StackName} -r dnsForwarderLaunchTemplate -c update --region ${AWS::Region}
+                  runas=root
+              group: root
+              mode: '000400'
+              owner: root
+          services:
+            sysvinit:
+              cfn-hup:
+                enabled: true
+                files:
+                - /etc/cfn/cfn-hup.conf
+                - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+        named:
+          commands:
+            create_namedlogsdir:
+              command:
+                Fn::Sub: |
+                  mkdir -p /var/log/named/
+                  chown -R named:named /var/log/named/
+          packages:
+            yum:
+              bind: {}
+              bind-utils: {}
+          services:
+            sysvinit:
+              named:
+                enabled: true
+                ensureRunning: true
+                files:
+                - /etc/named.conf
+          files:
+            /etc/named.conf:
+              group: root
+              mode: '0644'
+              owner: root
+              content:
+                Fn::Sub: |-
+                  options {
+                    listen-on port 53 { any; };
+                    directory       "/var/named";
+                    dump-file       "/var/named/data/cache_dump.db";
+                    statistics-file "/var/named/data/named_stats.txt";
+                    memstatistics-file "/var/named/data/named_mem_stats.txt";
+                    allow-query     { any; };
+                    recursion yes;
+                    dnssec-enable yes;
+                    dnssec-validation yes;
+                    auth-nxdomain no;
+                    forward only;
+                    forwarders {
+                      {{ clusterSpec.vpcDefaultDNSIp }};
+                    };
+                  };
+                  logging {
+                    channel default_debug {
+                      file "/var/log/named/default.log";
+                      severity dynamic;
+                    };
+                  };
+                  {% for dnsForwarderZone in clusterSpec.dnsForwarderZones %}
+                  zone "{{ dnsForwarderZone.name }}" IN {
+                      type forward;
+                      forward only;
+                      forwarders {
+                      {% for forwarder in dnsForwarderZone.forwarders %}
+                        {{ forwarder }};
+                      {% endfor %}
+                      };
+                  };
+                  {% endfor %}
+
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        IamInstanceProfile:
+          Arn:
+            Fn::GetAtt: [dnsForwarderInstanceProfile, Arn]
+        ImageId: '{{ dnsForwarderAmiId }}'
+        InstanceType: '{{ clusterSpec.dnsForwarderInstanceType }}'
+        KeyName: '{{ clusterSpec.sshKeyName }}'
+        TagSpecifications:
+        - ResourceType: instance
+          Tags:
+          - Key: Name
+            Value: '{{clusterSpec.cluster_name}}-dnsForwarder'
+        SecurityGroupIds:
+        - Ref: sgDefault
+        - Ref: sgDnsForwarder
+        UserData:
+          Fn::Base64:
+            Fn::Sub: |-
+              #!/bin/sh
+              yum install -y aws-cfn-bootstrap aws-cli unzip
+
+              INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+              LOGICIAL_RESOURCE_NAME=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=aws:cloudformation:logical-id" --region ${AWS::Region} --query 'Tags[*].Value' --output text)
+              /opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource dnsForwarderLaunchTemplate -c first-boot
+              /opt/aws/bin/cfn-signal -e $? --region ${AWS::Region} --stack ${AWS::StackName} --resource $LOGICIAL_RESOURCE_NAME
+
+{% for subnet in (clusterSpec.subnets | selectattr('type', 'equalto', 'Private')) %}
+  dnsForwarderNetworkInterface{{ loop.index }}:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      GroupSet:
+      - Ref: sgDefault
+      - Ref: sgDnsForwarder
+      PrivateIpAddress: '{{ subnet.dnsForwarderIpAddress }}'
+      SubnetId:
+        Ref: 'Subnet{{ subnet.type }}{{ loop.index }}'
+      Tags:
+      - Key: Name
+        Value: 'dns-forwarder'
+
+  dnsForwarderInstance{{ loop.index }}:
+    Type: AWS::EC2::Instance
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId:
+          Ref: dnsForwarderLaunchTemplate
+        Version:
+          Fn::GetAtt: [dnsForwarderLaunchTemplate, LatestVersionNumber]
+      SubnetId:
+        Ref: 'Subnet{{ subnet.type }}{{ loop.index }}'
+
+  dnsForwaderInstanceNetworkAttach{{ loop.index}}:
+    Type: AWS::EC2::NetworkInterfaceAttachment
+    Properties:
+      DeviceIndex: 1
+      NetworkInterfaceId:
+        Ref: dnsForwarderNetworkInterface{{ loop.index }}
+      InstanceId:
+        Ref: dnsForwarderInstance{{ loop.index }}
+
+{% endfor %}
+

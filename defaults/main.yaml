@@ -6,6 +6,10 @@ kops_log_file: /tmp/{{ clusterSpec.cluster_name }}-kops-out.log
 defaultClusterSpec:
   create_bastions: false
   attach_transit_vpc: false
+  createDNSForwarders: false
+  dnsForwarderInstanceType: r4.large
+  dnsForwaderImageName: amzn-ami-hvm-2018.03.0.20180811-x86_64-gp2
+  dnsForwaderImageOwner: '137112412989'
   kubeScheduler: {}
   kubeDNS: {}
   enableEtcdTLS: false

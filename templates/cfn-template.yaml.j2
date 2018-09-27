@@ -1,3 +1,4 @@
+#jinja2: lstrip_blocks: True
 Description: VPC for {{ clusterSpec.cluster_name }}
 Resources:
   VPC:
@@ -11,27 +12,6 @@ Resources:
       - Key: kubernetes.io/cluster/{{ clusterSpec.cluster_name }}
         Value: shared
     Type: AWS::EC2::VPC
-
-  DHCPOptions:
-    Type: "AWS::EC2::DHCPOptions"
-    Properties:
-      DomainName:
-        Fn::Sub: {{ 'ec2.internal' if clusterSpec.aws_region == 'us-east-1' else '${AWS::Region}.compute.internal' }}
-      DomainNameServers:
-        - AmazonProvidedDNS
-      Tags:
-      - Key: Name
-        Value: '{{ clusterSpec.cluster_name }}'
-      - Key: kubernetes.io/cluster/{{ clusterSpec.cluster_name }}
-        Value: shared
-
-  DHCPOptionsAssociation:
-    Type: "AWS::EC2::VPCDHCPOptionsAssociation"
-    Properties:
-      DhcpOptionsId:
-        Ref: DHCPOptions
-      VpcId:
-        Ref: VPC
 
   InternetGateway:
     Properties:
@@ -297,4 +277,41 @@ Resources:
       VpnGatewayId:
         Ref: VPNGateway
     Type: AWS::EC2::VPNGatewayRoutePropagation
+{% endif %}
+
+  DHCPOptions:
+    Type: "AWS::EC2::DHCPOptions"
+    Properties:
+      DomainName:
+        Fn::Sub: {{ 'ec2.internal' if clusterSpec.aws_region == 'us-east-1' else '${AWS::Region}.compute.internal' }}
+      DomainNameServers:
+      {% if clusterSpec.createDNSForwarders %}
+      {% for subnet in (clusterSpec.subnets | selectattr('type', 'equalto', 'Private')) %}
+        - '{{ subnet.dnsForwarderIpAddress }}'
+      {% endfor %}
+      {% else %}
+        - AmazonProvidedDNS
+      {% endif %}
+      Tags:
+      - Key: Name
+        Value: '{{ clusterSpec.cluster_name }}'
+      - Key: kubernetes.io/cluster/{{ clusterSpec.cluster_name }}
+        Value: shared
+
+  DHCPOptionsAssociation:
+    Type: "AWS::EC2::VPCDHCPOptionsAssociation"
+    {% if clusterSpec.createDNSForwarders %}
+    DependsOn:
+    {% for subnet in (clusterSpec.subnets | selectattr('type', 'equalto', 'Private')) %}
+    - dnsForwaderInstanceNetworkAttach{{ loop.index}}
+    {% endfor %}
+    {% endif %}
+    Properties:
+      DhcpOptionsId:
+        Ref: DHCPOptions
+      VpcId:
+        Ref: VPC
+
+{% if clusterSpec.createDNSForwarders %}
+{% include './cfn-dns-forwarders.yaml.j2' %}
 {% endif %}
