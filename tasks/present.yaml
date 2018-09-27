@@ -16,6 +16,11 @@
     - generate-files
     - iam-roles
 
+- import_tasks: "create-local-vpc-peering.yaml"
+  tags:
+    - vpc
+    - cluster
+
 - import_tasks: "generate-cluster-spec.yaml"
   tags:
     - cluster

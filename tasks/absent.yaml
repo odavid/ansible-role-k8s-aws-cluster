@@ -13,6 +13,11 @@
     - vpc
     - cluster
 
+- import_tasks: "delete-local-vpc-peering.yaml"
+  tags:
+    - vpc
+    - cluster
+
 - import_tasks: "delete-vpc-cfn-stack.yaml"
   tags:
     - vpc

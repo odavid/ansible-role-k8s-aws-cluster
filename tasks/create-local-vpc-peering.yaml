@@ -1,0 +1,45 @@
+- name: get local vpc peers
+  ec2_vpc_peering_facts:
+    region: '{{ clusterSpec.aws_region }}'
+    filters:
+      'accepter-vpc-info.cidr-block': '{{ clusterSpec.networkCIDR }}'
+  register: vpc_peering
+
+- name: get vpc_facts for target vpcs
+  ec2_vpc_net_facts:
+    region: "{{ clusterSpec.aws_region }}"
+    filters:
+      cidr: "{{ item.cidr }}"
+  register: target_vpcs_facts
+  with_items: '{{ clusterSpec.vpcPeeringCidrs }}'
+
+- set_fact:
+    target_vpc_ids: []
+    target_vpc_ids_to_cidr: {}
+
+- set_fact:
+    target_vpc_ids: '{{ target_vpc_ids + [ item.vpcs[0].vpc_id ] }}'
+    target_vpc_ids_to_cidr: '{{ target_vpc_ids_to_cidr | combine({ item.vpcs[0].vpc_id: item.vpcs[0].cidr_block }) }}'
+  with_items: '{{ target_vpcs_facts.results }}'
+
+- debug: var=target_vpc_ids
+
+- name: vpc-peer-connection
+  ec2_vpc_peer:
+    region: '{{ clusterSpec.aws_region }}'
+    vpc_id: '{{ vpc_id }}'
+    peer_vpc_id: '{{ item }}'
+    state: "present"
+    tags:
+      Name: '{{ clusterSpec.cluster_name }} -> {{ target_vpc_ids_to_cidr[item] }}'
+  with_items: '{{ target_vpc_ids }}'
+  register: vpc_peers
+
+- debug: var=vpc_peers
+
+- name: accept vpc-peer-connection
+  ec2_vpc_peer:
+    region: '{{ clusterSpec.aws_region }}'
+    peering_id: '{{ item.peering_id }}'
+    state: "accept"
+  with_items: '{{ vpc_peers.results }}'
