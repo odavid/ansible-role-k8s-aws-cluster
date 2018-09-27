@@ -5,8 +5,6 @@
       'requester-vpc-info.cidr-block': '{{ clusterSpec.networkCIDR }}'
   register: vpc_peering
 
-- debug: var=vpc_peering
-
 - name: delete vpc peering connections
   ec2_vpc_peer:
     region: '{{ clusterSpec.aws_region }}'

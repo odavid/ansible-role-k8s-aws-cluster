@@ -15,8 +15,6 @@
     target_vpc_ids_to_cidr: '{{ target_vpc_ids_to_cidr | combine({ item.vpcs[0].vpc_id: item.vpcs[0].cidr_block }) }}'
   with_items: '{{ target_vpcs_facts.results }}'
 
-- debug: var=target_vpc_ids
-
 - name: vpc-peer-connection
   ec2_vpc_peer:
     region: '{{ clusterSpec.aws_region }}'
@@ -27,8 +25,6 @@
       Name: '{{ clusterSpec.cluster_name }} -> {{ target_vpc_ids_to_cidr[item] }}'
   with_items: '{{ target_vpc_ids }}'
   register: vpc_peers
-
-- debug: var=vpc_peers
 
 - name: accept vpc-peer-connection
   ec2_vpc_peer:
