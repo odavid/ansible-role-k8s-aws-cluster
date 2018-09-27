@@ -1,10 +1,3 @@
-- name: get local vpc peers
-  ec2_vpc_peering_facts:
-    region: '{{ clusterSpec.aws_region }}'
-    filters:
-      'accepter-vpc-info.cidr-block': '{{ clusterSpec.networkCIDR }}'
-  register: vpc_peering
-
 - name: get vpc_facts for target vpcs
   ec2_vpc_net_facts:
     region: "{{ clusterSpec.aws_region }}"
