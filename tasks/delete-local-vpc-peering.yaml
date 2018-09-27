@@ -1,0 +1,16 @@
+- name: get local vpc peers
+  ec2_vpc_peering_facts:
+    region: '{{ clusterSpec.aws_region }}'
+    filters:
+      'requester-vpc-info.cidr-block': '{{ clusterSpec.networkCIDR }}'
+  register: vpc_peering
+
+- debug: var=vpc_peering
+
+- name: delete vpc peering connections
+  ec2_vpc_peer:
+    region: '{{ clusterSpec.aws_region }}'
+    state: "absent"
+    peering_id: '{{ item.vpc_peering_connection_id }}'
+  with_items: '{{ vpc_peering.result }}'
+  register: deleted_vpc_peers
