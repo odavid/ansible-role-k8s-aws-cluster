@@ -24,7 +24,7 @@
 
 - name: install {{ name }} using helm
   shell: |
-    helm --wait {% if addon.chart.startswith('quay.io/') %}registry{% endif %} install \
+    helm {% if addon.chart.startswith('quay.io/') %}registry{% endif %} install --wait \
       --namespace={{ addon.namespace | default('default') }} \
       --name={{ name }} \
       {{ addon.chart }} {% if addon.chart_version is defined %}--version {{ addon.chart_version }}{% endif %} \

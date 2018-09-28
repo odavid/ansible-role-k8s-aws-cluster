@@ -137,8 +137,6 @@ defaultClusterSpec:
       chart_version: '0.7.5'
       namespace: kube-system
       values:
-        image:
-          tag: v0.5.4
         aws:
           provider: 'aws'
           region: '{{ clusterSpec.aws_region }}'
