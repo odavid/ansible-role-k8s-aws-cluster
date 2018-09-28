@@ -164,7 +164,8 @@ defaultClusterSpec:
 
     alb-ingress:
       enabled: true
-      chart: '{{ role_path }}/patched-addon-charts/alb-ingress-controller'
+      chart: 'quay.io/coreos/alb-ingress-controller-helm'
+      chart_version: '0.1.2'
       namespace: kube-system
       values:
         clusterName: '{{ clusterSpec.cluster_name }}'
