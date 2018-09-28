@@ -1,6 +1,8 @@
-- name: define defaults for cluster spec
+- name: merge defaults
   set_fact:
     clusterSpec: '{{ defaultClusterSpec | combine(clusterSpec, recursive=True) }}'
+    iam_policies: '{{ default_iam_policies | combine(iam_policies, recursive=True) }}'
+    iam_roles: '{{ default_iam_roles | combine(iam_roles, recursive=True) }}'
   tags:
     - always
 
