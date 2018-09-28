@@ -364,3 +364,6 @@ default_iam_roles:
   k8s-cloudwatch-logs:
     policies:
     - k8s-cloudwatch-logs
+
+iam_policies: {}
+iam_roles: {}
