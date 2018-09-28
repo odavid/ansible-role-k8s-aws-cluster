@@ -89,6 +89,7 @@ defaultClusterSpec:
     kube2iam:
       enabled: true
       chart: stable/kube2iam
+      chart_version: '0.9.0'
       namespace: kube-system
       values:
         tolerations:
@@ -109,6 +110,7 @@ defaultClusterSpec:
     cluster-autoscaler:
       enabled: true
       chart: stable/cluster-autoscaler
+      chart_version: '0.7.0'
       namespace: kube-system
       values:
         awsRegion: '{{ clusterSpec.aws_region }}'
@@ -123,6 +125,7 @@ defaultClusterSpec:
     metrics-server:
       enabled: true
       chart: stable/metrics-server
+      chart_version: '2.0.2'
       namespace: kube-system
       values:
         rbac:
@@ -130,9 +133,9 @@ defaultClusterSpec:
 
     external-dns:
       enabled: true
-      chart: '{{ role_path }}/patched-addon-charts/external-dns'
+      chart: 'stable/external-dns'
+      chart_version: '0.7.5'
       namespace: kube-system
-      chart_version: '0.7.0'
       values:
         image:
           tag: v0.5.4
