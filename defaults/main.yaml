@@ -131,6 +131,22 @@ defaultClusterSpec:
         rbac:
           create: true
 
+    kube-state-metrics:
+      enabled: true
+      chart: stable/kube-state-metrics
+      chart_version: '0.9.0'
+      namespace: kube-system
+      values:
+        rbac:
+          create: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
+            limits:
+              cpu: 100m
+              memory: 200Mi
+
     external-dns:
       enabled: true
       chart: 'stable/external-dns'
