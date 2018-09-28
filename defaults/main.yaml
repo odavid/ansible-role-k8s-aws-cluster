@@ -197,6 +197,7 @@ defaultClusterSpec:
   nginxIngressTemplate:
     chart: stable/nginx-ingress
     namespace: 'nginx-ingress'
+    chart_version: '0.28.2'
     values:
       rbac:
         create: true
