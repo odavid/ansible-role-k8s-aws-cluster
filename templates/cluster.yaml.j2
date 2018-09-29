@@ -79,6 +79,7 @@ spec:
     - encryptedVolume: true
       instanceGroup: master-{{zone}}
       name: {{ zone[-1:] }}
+      volumeSize: {{ clusterSpec.etcdMainVolumeSize }}
 {% endfor %}
     name: main
 {% if clusterSpec.enableEtcdTLS %}
@@ -87,11 +88,13 @@ spec:
 {% if clusterSpec.etcdVersion %}
     version: {{ etcdVersion }}
 {% endif %}
+
   - etcdMembers:
 {% for zone in master_zones.split(',') %}
     - encryptedVolume: true
       instanceGroup: master-{{zone}}
       name: {{ zone[-1:] }}
+      volumeSize: {{ clusterSpec.etcdEventsVolumeSize }}
 {% endfor %}
     name: events
 {% if clusterSpec.enableEtcdTLS %}
