@@ -115,6 +115,9 @@ defaultClusterSpec:
       chart_version: '0.7.0'
       namespace: kube-system
       values:
+        ## SafeToEvict=false enhancment
+        image:
+          tag: v1.2.3
         awsRegion: '{{ clusterSpec.aws_region }}'
         cloudProvider: aws
         autoDiscovery:
