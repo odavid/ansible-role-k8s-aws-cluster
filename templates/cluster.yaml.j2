@@ -242,7 +242,7 @@ spec:
 {% for sp in suspendProcesses %}
   - {{ sp }}
 {% endfor %}
-{% endif }
+{% endif %}
 {% if nodeLabels %}
 {{ nodeLabels | to_nice_yaml(indent=2) | indent(4, true) }}
 {% endif %}
