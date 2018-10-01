@@ -235,12 +235,6 @@ spec:
   rootVolumeSize: {{ instanceGroup.rootVolumeSize }}
   nodeLabels:
     kops.k8s.io/instancegroup: {{ name }}
-{% if suspendProcesses %}
-  suspendProcesses:
-{% for sp in suspendProcesses %}
-  - {{ sp }}
-{% endfor %}
-{% endif %}
 {% if nodeLabels %}
 {{ nodeLabels | to_nice_yaml(indent=2) | indent(4, true) }}
 {% endif %}
@@ -255,6 +249,12 @@ spec:
 {% if sg_default %}
   additionalSecurityGroups:
   - {{ sg_default }}
+{% endif %}
+{% if suspendProcesses %}
+  suspendProcesses:
+{% for sp in suspendProcesses %}
+  - {{ sp }}
+{% endfor %}
 {% endif %}
 {% endif %}
 
