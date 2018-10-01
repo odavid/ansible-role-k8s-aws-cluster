@@ -209,6 +209,10 @@ spec:
 {%- if instanceGroup.autoScalerEnabled-%}
 {%- set cloudLabels = {'k8s.io/cluster-autoscaler/enabled': 'true', 'kubernetes.io/cluster/'+clusterSpec.cluster_name : ''}|combine(cloudLabels, recursive=True) -%}
 {%- endif -%}
+{%- if instanceGroup.suspendProcesses is defined -%}
+{%- set suspendProcesses = instanceGroup.suspendProcesses -%}
+{%- endif -%}
+
 ---
 apiVersion: kops/v1alpha2
 kind: InstanceGroup
@@ -233,6 +237,12 @@ spec:
   rootVolumeSize: {{ instanceGroup.rootVolumeSize }}
   nodeLabels:
     kops.k8s.io/instancegroup: {{ name }}
+{% if suspendProcesses %}
+  suspendProcesses:
+{% for sp in suspendProcesses %}
+  - {{ sp }}
+{% endfor %}
+{% endif }
 {% if nodeLabels %}
 {{ nodeLabels | to_nice_yaml(indent=2) | indent(4, true) }}
 {% endif %}
