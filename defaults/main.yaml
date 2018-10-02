@@ -176,7 +176,7 @@ defaultClusterSpec:
         clusterName: '{{ clusterSpec.cluster_name }}'
         awsRegion: '{{ clusterSpec.aws_region }}'
         podAnnotations:
-          iam.amazonaws.com/role: k8s-aws-alb-ingress-controller-{{ clusterSpec.cluster_name }}
+          iam.amazonaws.com/role: k8s-aws-alb-ingress-{{ clusterSpec.cluster_name }}
         livenessProbeInitialDelay: 300
 
 
@@ -261,7 +261,7 @@ default_iam_policies:
         Resource:
         - "*"
 
-  k8s-aws-alb-ingress-controller:
+  k8s-aws-alb-ingress:
     policy_description: A managed policy for k8s aws-alb-ingress-controller
     policy:
       Version: '2012-10-17'
@@ -363,9 +363,9 @@ default_iam_roles:
   k8s-external-dns:
     policies:
     - k8s-external-dns
-  k8s-aws-alb-ingress-controller:
+  k8s-aws-alb-ingress:
     policies:
-    - k8s-aws-alb-ingress-controller
+    - k8s-aws-alb-ingress
   k8s-cloudwatch-logs:
     policies:
     - k8s-cloudwatch-logs
