@@ -5,7 +5,11 @@
       SecurityGroupIngress:
       - CidrIp: 0.0.0.0/0
         FromPort: 53
-        IpProtocol: '-1'
+        IpProtocol: 'tcp'
+        ToPort: 53
+      - CidrIp: 0.0.0.0/0
+        FromPort: 53
+        IpProtocol: 'udp'
         ToPort: 53
       Tags:
       - Key: Name
