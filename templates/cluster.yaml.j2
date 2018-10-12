@@ -175,6 +175,8 @@ spec:
 
 {% for zone in master_zones.split(',') %}
 {%- set instanceGroup = clusterSpec.defaultInstanceGroupSpec | combine(clusterSpec.instanceGroups.masters, recursive=True) -%}
+{%- set cloudLabels = instanceGroup.cloudLabels | default({}) -%}
+{%- set nodeLabels = instanceGroup.nodeLabels | default({}) -%}
 ---
 apiVersion: kops/v1alpha2
 kind: InstanceGroup
@@ -188,8 +190,15 @@ spec:
   machineType: {{ instanceGroup.machineType }}
   maxSize: 1
   minSize: 1
+{% if cloudLabels %}
+  cloudLabels:
+{{ cloudLabels | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
   nodeLabels:
     kops.k8s.io/instancegroup: master-{{ zone }}
+{% if nodeLabels %}
+{{ nodeLabels | to_nice_yaml(indent=2) | indent(4, true) }}
+{% endif %}
   role: Master
   rootVolumeSize: {{ instanceGroup.rootVolumeSize }}
   subnets:
