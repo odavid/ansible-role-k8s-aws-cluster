@@ -179,54 +179,6 @@ defaultClusterSpec:
           iam.amazonaws.com/role: k8s-aws-alb-ingress-{{ clusterSpec.cluster_name }}
         livenessProbeInitialDelay: 300
 
-
-  kubernetesDashboardTemplate:
-    chart: '{{ role_path }}/patched-addon-charts/kubernetes-dashboard'
-    namespace: kube-system
-    values:
-      extraArgs:
-        - --enable-insecure-login
-      rbac:
-        create: true
-      exposeHTTPs: false
-      ingress:
-        annotations:
-          ingress.kubernetes.io/force-ssl-redirect: "true"
-          kubernetes.io/ingress.allow-http: "false"
-          kubernetes.io/ingress.class: nginx-internal
-      service:
-        externalPort: 80
-
-  kubernetesDashboard:
-    enabled: false
-
-  nginxIngressTemplate:
-    chart: stable/nginx-ingress
-    namespace: 'nginx-ingress'
-    chart_version: '0.28.2'
-    values:
-      rbac:
-        create: true
-      controller:
-        kind: DaemonSet
-        minAvailable: 0
-        config:
-          server-snippet: |
-            if ($http_x_forwarded_proto = 'http'){
-                return 301 https://$host$request_uri;
-            }
-        publishService:
-          enabled: true
-        service:
-          targetPorts:
-            http: http
-            https: http
-          annotations:
-            service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
-            service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
-            service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: '3600'
-
-
 ##### Default IAM Roles and Polcies
 default_iam_policies:
   k8s-cluster-autoscaler:

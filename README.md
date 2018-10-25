@@ -42,8 +42,6 @@ The role is installing the following addons:
 * [cluster-autoscaler](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler) - configured with [auto-discovery](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler/cloudprovider/aws#auto-discovery-setup)
 * [metrics-server](https://kubernetes.io/docs/tasks/debug-application-cluster/core-metrics-pipeline/) - cluster-wide aggregator of resource usage data
 * [external-dns](https://github.com/kubernetes-incubator/external-dns) - Register DNS Records based on service annotations and ingress hostnames
-* [kubernetes-dashboard](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/)
-* [nginx ingress controllers](https://github.com/kubernetes/ingress-nginx) - Ability to install multiple nginx ingress controllers (internal and internet facing)
 
 ## IAM Roles and Policies
 The role creates the following IAM policies:
@@ -70,8 +68,6 @@ The following tags can be control different aspects of ansible role execution:
 * `iam-roles` - responsible for creation/deletion of cluster iam roles
 * `tiller` - responsible for initializing [helm](https://github.com/helm/helm#helm-in-a-handbasket) with a dedicated cluster role
 * `addons` - responsible for installing addons using helm
-* `ingress-controllers` - responsible for installing nginx ingress controllers within the cluster
-* `dashboard` - responsible for installing dashboard within the cluster
 
 ## clusterSpec
 
@@ -88,8 +84,6 @@ The following tags can be control different aspects of ansible role execution:
 | `subnets` | List of subnet dicts. Each one contains the following attributes: `cidr`, `name`, `type` - `Private|Utility`, `zone` - the Availability zone | | True |
 | `sgIngressRules` | List of `Security Group Ingress Rules` to be added to the default security group| |  |
 | `instanceGroups` | a dict of `instanceGroups` - specifying nodes attributes| | At least one instance group should be defined other than `masters` |
-| `nginxIngressControllers` | a dict of `ingress classes` and their configuration| | usually `nginx-internal` and `nginx-external` |
-| `kubernetesDashboard` | enabling `kubernetesDashboard` and its configuration| | |
 
 ## Example Configuration
 
@@ -141,20 +135,6 @@ clusterSpec:
       maxSize: 4
       minSize: 3
       rootVolumeSize: 50
-
-  nginxIngressControllers:
-    nginx-internal:
-      internal: true
-      certificateArn: 'arn://<ACM-ARN>'
-    nginx-external:
-      internal: false
-      certificateArn: 'arn://<ACM-ARN>'
-
-  kubernetesDashboard:
-    enabled: true
-    ingress:
-      ingressClass: nginx-internal
-      hostname: k8s-dashboard.example.com
 ```
 
 ## Example playbook

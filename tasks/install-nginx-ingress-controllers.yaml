@@ -1,5 +1,0 @@
-- include_tasks: install-nginx-ingress-controller.yaml
-  vars:
-    ingressConfig: '{{ item.value }}'
-    ingressClass: '{{ item.key }}'
-  with_dict: '{{ clusterSpec.nginxIngressControllers | default({}) }}'
