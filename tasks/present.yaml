@@ -51,16 +51,3 @@
   tags:
     - cluster
     - addons
-
-- import_tasks: "install-nginx-ingress-controllers.yaml"
-  tags:
-    - cluster
-    - addons
-    - ingress-controllers
-
-- import_tasks: "install-dashboard.yaml"
-  when: "clusterSpec.kubernetesDashboard.enabled"
-  tags:
-    - cluster
-    - addons
-    - dashboard
