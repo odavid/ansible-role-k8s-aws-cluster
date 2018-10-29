@@ -158,6 +158,7 @@ defaultClusterSpec:
       chart_version: '0.7.5'
       namespace: kube-system
       values:
+        txtOwnerId: '{{ clusterSpec.cluster_name }}'
         aws:
           provider: 'aws'
           region: '{{ clusterSpec.aws_region }}'
