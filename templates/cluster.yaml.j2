@@ -42,7 +42,7 @@ spec:
 {% endif %}
 {% if clusterSpec.kubernetesApiAccess %}
   kubernetesApiAccess:
-{{ clusterSpec.kubernetesApiAccess | to_nice_yaml(indent=2) | indent(4, true) }}
+{{ clusterSpec.kubernetesApiAccess | to_nice_yaml(indent=2) | indent(2, true) }}
 {% endif %}
 {% if clusterSpec.kubeScheduler %}
   kubeScheduler:
@@ -55,10 +55,6 @@ spec:
 {% if clusterSpec.api %}
   api:
 {{ clusterSpec.api | to_nice_yaml(indent=2) | indent(4, true) }}
-{% endif %}
-{% if clusterSpec.authorization %}
-  authorization:
-{{ clusterSpec.authorization | to_nice_yaml(indent=2) | indent(4, true) }}
 {% endif %}
 {% if clusterSpec.authorization %}
   authorization:
@@ -107,8 +103,6 @@ spec:
   additionalPolicies:
 {{ clusterSpec.additionalPolicies | to_nice_yaml(indent=2) | indent(4, true) }}
 {% endif %}
-  kubernetesApiAccess:
-{{ clusterSpec.kubernetesApiAccess | to_nice_yaml(indent=2) | indent(2, true) }}
   kubernetesVersion: {{ clusterSpec.kubernetesVersion }}
   masterPublicName: api.{{ clusterSpec.dns_zone }}
   networkCIDR: {{ clusterSpec.networkCIDR }}
